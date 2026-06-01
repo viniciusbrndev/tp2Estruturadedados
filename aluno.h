@@ -19,7 +19,14 @@ typedef struct{
     long tam;
 } Intervalo;
 
+typedef struct celula{
+    Intervalo data;
+    struct celula *prox;
+}Celula;
 
-long * first_fit(Processo *processos, int num_processos);
+typedef struct lista Lista;
+
+Processo* alocaVetProcess(int tam);
+long* first_fit(Processo *processos, int num_processos);
 
 #endif
