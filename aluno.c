@@ -8,7 +8,6 @@
 struct lista{
     int tamMax;
     Celula* cab;
-    Celula* fim;
 };
 typedef enum{
     ALOCOU,
@@ -39,7 +38,6 @@ Lista* criaLista(int tam_max){
         memory->data.tam = tam_max;
         memory->prox = NULL;
         pTemp->cab->prox = memory;
-        pTemp->fim = memory;
     }
     return pTemp;
 }
@@ -75,10 +73,8 @@ RES alocaProcesso(Processo *proc, Lista* pMem, long *alocs, int idProcess){
     //atualiza o tamanho restante do bloco
     aux->data.tam = aux->data.tam - proc[idProcess].tam; 
 
-    if(aux->data.tam == 0){
+    if(aux->data.tam == 0){ //Se toda a memoria do bloco foi consumida
         ant->prox = aux->prox;
-        if(pMem->fim == aux)
-            pMem->fim = ant;
         free(aux);
     }
     return ALOCOU;
@@ -87,25 +83,47 @@ RES desalocaProcesso(Processo *proc, Lista* pMem, long *alocs, int idProcess){
     if(!proc || !pMem || !alocs)
         return ERRO;
     Celula* aux = pMem->cab->prox;
-    if(!aux->prox){
-        aux->prox = (Celula*)malloc(sizeof(Celula));
-        aux = aux->prox;
-        aux->prox = NULL;
-        aux->data.inicio = *alocs;
-        aux->data.tam = proc->tam;
-        pMem->fim = aux;
+    Celula* ant = pMem->cab;
+    if(!aux){
+        Celula *novo = (Celula*)malloc(sizeof(Celula));
+        novo->data.inicio = alocs[idProcess];
+        novo->data.tam = proc[idProcess].tam;
+        novo->prox = NULL;
+
+        ant->prox = novo;
+        
+
+        return DESALOC;
     }
-    while(*alocs > aux->data.inicio && aux->prox)
+    while(alocs[idProcess] > aux->data.inicio && aux->prox){
+        ant = aux;
         aux = aux->prox;
-    Celula *prox = aux->prox;
+    }
     Celula *novo = (Celula*)malloc(sizeof(Celula));
-    novo->prox = prox;
-    novo->data.inicio = *alocs;
-    novo->data.tam = proc->tam;
-    aux->prox = novo;
+    novo->prox = aux;
+    novo->data.inicio = alocs[idProcess];
+    novo->data.tam = proc[idProcess].tam;
+
+    ant->prox = novo;
     return DESALOC;
 }
-
+bool defragMemory(Lista *pLista){
+    if(!pLista || !pLista->cab->prox)
+        return false;
+    Celula* aux = pLista->cab->prox;
+    Celula* proximo = aux->prox;
+    while(aux && proximo){
+        //Se aux termina onde o proximo começa
+        if(aux->data.inicio + aux->data.tam == proximo->data.inicio){
+            //Absorve o próximo bloco de memória
+            aux->data.tam += proximo->data.tam;
+            
+            aux->prox = proximo->prox; //Pulamos o bloco absorvido
+            free(proximo);//liberando sua memória
+        }
+    }
+    return true;
+}
 
 
 bool ordenaEventos(Evento*v, int ini, int fim){
@@ -134,6 +152,7 @@ long* first_fit(Processo *processos, int num_processos) {
     int aux;
     for(int i = 0; i < num_processos*2; i++){
         aux = eventos[i].processo; //Qual processo está sendo modificado
+        
         if(eventos[i].tipo == ALLOCATION_EVENT)
             if(alocaProcesso(processos, memory, alocacoes, aux) == FULL){
                 printf("Memória Cheia!\n");
@@ -141,6 +160,7 @@ long* first_fit(Processo *processos, int num_processos) {
                 
         else{
             desalocaProcesso(processos, memory, alocacoes, aux);
+            desfragMemory(memory);
         }
     }
 
