@@ -5,7 +5,7 @@
 int main() {
     int num_processos;
     scanf("%ld", &num_processos);
-    Processo *processos = alocaProcesso(num_processos);
+    Processo *processos = alocaProcessoVet(num_processos);
     
     for (int i = 0; i < num_processos; ++i) {
         scanf("%d %d %ld", &processos[i].tempo_aloc, &processos[i].tempo_desaloc, &processos[i].tam);

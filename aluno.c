@@ -14,8 +14,11 @@ typedef enum{
     DESALOC,
     FULL,
     ERRO,
+    DEPOIS,
+    ANTES,
+    IGUAL,
 }RES;
-
+//FUNCOES DAS ESTRUTURAS
 Lista* criaLista(int tam_max){
     Lista* pTemp = (Lista*)malloc(sizeof(Lista));
     if(pTemp){
@@ -50,9 +53,9 @@ Processo* alocaVetProcess(int tam){
         pTemp = NULL;
     return pTemp;
 }
+//Lembrar de criar funções de liberar memória
 
-
-
+//FUNCOES DE GERENCIAMENTO DE MEMÓRIA
 RES alocaProcesso(Processo *proc, Lista* pMem, long *alocs, int idProcess){
     if(!proc || !pMem || !alocs)
         return ERRO;
@@ -125,9 +128,66 @@ bool defragMemory(Lista *pLista){
     return true;
 }
 
+//ORDENAÇAO DE VETORES
+RES comparaEvento(Evento e1, Evento e2){
+    if(e1.tempo < e2.tempo)
+        return ANTES;
 
-bool ordenaEventos(Evento*v, int ini, int fim){
+    else if(e1.tempo == e2.tempo){
+        if(e1.tipo > e2.tipo)
+            return ANTES;
+        else if(e1.tipo == e2.tipo)
+            return IGUAL;
+    }
 
+    return DEPOIS;
+}
+//complexidade O(n)
+void merge(Evento *events,int ini, int fim, int m){
+    int leftsize = (m - fim) +1;
+    int rightsize = (ini - m);
+
+    Evento *leftVector = (Evento*)malloc(sizeof(Evento)*leftsize);
+    Evento *rightVector = (Evento*)malloc(sizeof(Evento)*rightsize);
+
+    if(!leftVector || !rightVector)
+        return;
+    //copiando os valores para os subvetores
+    int i, j;
+    for(i = 0; i < leftsize; i++)
+        leftVector[i] = events[i + ini];
+    
+    for(j = 0; j < rightsize; j++)
+        rightVector[j] = events[j + fim];
+    //Comparando os valores 
+    int k = ini;
+    i = 0; j = 0;
+    while(i < leftsize && j < rightsize){
+        RES comp = comparaEvento(leftVector[i], rightVector[j]);
+        if(comp == ANTES || comp == IGUAL)
+            events[k++] = leftVector[i++];
+        else
+            events[k++] = rightVector[j++];
+        
+    }
+    //copiando o resto do vetor
+    while(i < leftsize)
+        events[k++] = leftVector[i++];
+    while(j < rightsize)
+        events[k++] = rightVector[j++];
+    //liberando os vetores auxiliares
+    free(leftVector);
+    free(rightVector);
+}
+//Merge sort complexidade O(nlogn)
+void ordenaEventos(Evento*v, int ini, int fim){
+    if(ini < fim){
+        int m = (ini + fim) / 2;
+        ordenaEventos(v, ini, m);   //O(logn)
+        ordenaEventos(v, m+1, fim);
+        merge(v, ini, fim, m);      //O(n)
+    }
+    return;
 }
 long* first_fit(Processo *processos, int num_processos) {
     long *alocacoes = (long *)malloc(num_processos*sizeof(long));
