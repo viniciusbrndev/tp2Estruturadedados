@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "aluno.h"
 #include <stdbool.h>
+#include <stdio.h>
 
 #define ALLOCATION_EVENT 0
 #define DEALLOCATION_EVENT 1
@@ -9,15 +10,7 @@ struct lista{
     int tamMax;
     Celula* cab;
 };
-typedef enum{
-    ALOCOU,
-    DESALOC,
-    FULL,
-    ERRO,
-    DEPOIS,
-    ANTES,
-    IGUAL,
-}RES;
+
 //FUNCOES DAS ESTRUTURAS
 Lista* criaLista(int tam_max){
     Lista* pTemp = (Lista*)malloc(sizeof(Lista));
@@ -110,7 +103,7 @@ RES desalocaProcesso(Processo *proc, Lista* pMem, long *alocs, int idProcess){
     ant->prox = novo;
     return DESALOC;
 }
-bool defragMemory(Lista *pLista){
+bool desfragMemory(Lista *pLista){
     if(!pLista || !pLista->cab->prox)
         return false;
     Celula* aux = pLista->cab->prox;

@@ -2,6 +2,15 @@
 #define ALUNO_H
 #include <stdbool.h>
 
+typedef enum{
+    ALOCOU,
+    DESALOC,
+    FULL,
+    ERRO,
+    DEPOIS,
+    ANTES,
+    IGUAL,
+}RES;
 typedef struct{
     int tempo_aloc;
     int tempo_desaloc;
@@ -25,7 +34,7 @@ typedef struct celula{
 }Celula;
 
 typedef struct lista Lista;
-Processo* alocaVetProcess(int tam);
+Processo* alocaProcessoVet(int tam);
 RES alocaProcesso(Processo *proc, Lista* pMem, long *alocs, int idProcess);
 RES desalocaProcesso(Processo *proc, Lista* pMem, long *alocs, int idProcess);
 bool defragMemory(Lista *pLista);
