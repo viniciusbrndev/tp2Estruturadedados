@@ -103,7 +103,7 @@ RES desalocaProcesso(Processo *proc, Lista* pMem, long *alocs, int idProcess){
     ant->prox = novo;
     return DESALOC;
 }
-bool desfragMemory(Lista *pLista){
+bool defragMemory(Lista *pLista){
     if(!pLista || !pLista->cab->prox)
         return false;
     Celula* aux = pLista->cab->prox;
@@ -213,7 +213,7 @@ long* first_fit(Processo *processos, int num_processos) {
                 
         else{
             desalocaProcesso(processos, memory, alocacoes, aux);
-            desfragMemory(memory);
+            defragMemory(memory);
         }
     }
 
