@@ -7,12 +7,12 @@
 #define DEALLOCATION_EVENT 1
 
 struct lista{
-    int tamMax;
+    long tamMax;
     Celula* cab;
 };
 
 //FUNCOES DAS ESTRUTURAS
-Lista* criaLista(int tam_max){
+Lista* criaLista(long tam_max){
     Lista* pTemp = (Lista*)malloc(sizeof(Lista));
     if(pTemp){
         pTemp->cab = (Celula*)malloc(sizeof(Celula));
@@ -38,7 +38,7 @@ Lista* criaLista(int tam_max){
     return pTemp;
 }
 
-Processo* alocaVetProcess(int tam){
+Processo* alocaProcessoVet(int tam){
     if(tam <= 0)
         return NULL;
     Processo *pTemp = (Processo*)malloc(sizeof(Processo)*tam);
@@ -46,7 +46,21 @@ Processo* alocaVetProcess(int tam){
         pTemp = NULL;
     return pTemp;
 }
-//Lembrar de criar funções de liberar memória
+
+void liberaLista(Lista *pLista){
+    if(!pLista)
+        return;
+
+    Celula *aux = pLista->cab;
+
+    while(aux != NULL){
+        Celula *prox = aux->prox;
+        free(aux);
+        aux = prox;
+    }
+
+    free(pLista);
+}
 
 //FUNCOES DE GERENCIAMENTO DE MEMÓRIA
 RES alocaProcesso(Processo *proc, Lista* pMem, long *alocs, int idProcess){
@@ -54,7 +68,7 @@ RES alocaProcesso(Processo *proc, Lista* pMem, long *alocs, int idProcess){
         return ERRO;
     Celula *aux = pMem->cab->prox;
     Celula *ant = pMem->cab;
-    while(aux != NULL && aux->data.tam < proc->tam){
+    while(aux != NULL && aux->data.tam < proc[idProcess].tam){
         ant = aux;      
         aux = aux->prox;    //caminhando na lista
     }
@@ -80,8 +94,9 @@ RES desalocaProcesso(Processo *proc, Lista* pMem, long *alocs, int idProcess){
         return ERRO;
     Celula* aux = pMem->cab->prox;
     Celula* ant = pMem->cab;
-    if(!aux){
+    if(!aux){ //lista esta vazia ou seja memoria cheia
         Celula *novo = (Celula*)malloc(sizeof(Celula));
+        if(!novo) return ERRO;
         novo->data.inicio = alocs[idProcess];
         novo->data.tam = proc[idProcess].tam;
         novo->prox = NULL;
@@ -96,10 +111,10 @@ RES desalocaProcesso(Processo *proc, Lista* pMem, long *alocs, int idProcess){
         aux = aux->prox;
     }
     Celula *novo = (Celula*)malloc(sizeof(Celula));
+    if(!novo) return ERRO;
     novo->prox = aux;
     novo->data.inicio = alocs[idProcess];
     novo->data.tam = proc[idProcess].tam;
-
     ant->prox = novo;
     return DESALOC;
 }
@@ -107,17 +122,19 @@ bool defragMemory(Lista *pLista){
     if(!pLista || !pLista->cab->prox)
         return false;
     Celula* aux = pLista->cab->prox;
-    Celula* proximo = aux->prox;
-    while(aux && proximo){
+    
+    while(aux && aux->prox){
+        Celula* proximo = aux->prox;
         //Se aux termina onde o proximo começa
         if(aux->data.inicio + aux->data.tam == proximo->data.inicio){
             //Absorve o próximo bloco de memória
             aux->data.tam += proximo->data.tam;
             
-            aux->prox = proximo->prox; //Pulamos o bloco absorvido
             free(proximo);//liberando sua memória
         }
+        aux->prox = proximo->prox; //Pulamos o bloco absorvido
     }
+    
     return true;
 }
 
@@ -137,8 +154,8 @@ RES comparaEvento(Evento e1, Evento e2){
 }
 //complexidade O(n)
 void merge(Evento *events,int ini, int fim, int m){
-    int leftsize = (m - fim) +1;
-    int rightsize = (ini - m);
+    int leftsize = (m - ini) +1;
+    int rightsize = fim - m;
 
     Evento *leftVector = (Evento*)malloc(sizeof(Evento)*leftsize);
     Evento *rightVector = (Evento*)malloc(sizeof(Evento)*rightsize);
@@ -151,7 +168,7 @@ void merge(Evento *events,int ini, int fim, int m){
         leftVector[i] = events[i + ini];
     
     for(j = 0; j < rightsize; j++)
-        rightVector[j] = events[j + fim];
+        rightVector[j] = events[j + m + 1];
     //Comparando os valores 
     int k = ini;
     i = 0; j = 0;
@@ -183,7 +200,9 @@ void ordenaEventos(Evento*v, int ini, int fim){
     return;
 }
 long* first_fit(Processo *processos, int num_processos) {
-    long *alocacoes = (long *)malloc(num_processos*sizeof(long));
+   long *alocacoes = (long *)malloc(num_processos * sizeof(long));
+    // verificacao necessaria para passar no valgrind, revisar
+    for(int i = 0; i < num_processos; i++) alocacoes[i] = -1;
     Evento *eventos = (Evento*)malloc(sizeof(Evento) * num_processos * 2);
     long max_tam = 0;
     for (int i = 0; i < num_processos; ++i) {
@@ -199,8 +218,8 @@ long* first_fit(Processo *processos, int num_processos) {
 
         max_tam += processos[i].tam;
     }
-
     // Insira aqui sua implementação
+    ordenaEventos(eventos, 0, num_processos * 2 - 1);
     Lista* memory = criaLista(max_tam);
     int aux;
     for(int i = 0; i < num_processos*2; i++){
@@ -217,10 +236,8 @@ long* first_fit(Processo *processos, int num_processos) {
         }
     }
 
-
-
-
-
-
+    free(eventos);
+    liberaLista(memory);
+    
     return alocacoes;
 }

@@ -36,6 +36,7 @@ typedef struct celula{
 typedef struct lista Lista;
 Processo* alocaProcessoVet(int tam);
 RES alocaProcesso(Processo *proc, Lista* pMem, long *alocs, int idProcess);
+void liberaLista(Lista *pLista);
 RES desalocaProcesso(Processo *proc, Lista* pMem, long *alocs, int idProcess);
 bool defragMemory(Lista *pLista);
 RES comparaEvento(Evento e1, Evento e2);

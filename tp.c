@@ -1,4 +1,5 @@
-#include<stdio.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "aluno.h"
 
 
@@ -16,6 +17,9 @@ int main() {
     for (int i = 0; i < num_processos; ++i) {
         printf("Processo %d alocado na posição %ld\n", i, alocacoes[i]);
     }
+
+    free(processos);
+    free(alocacoes);
 
     return 0;
 }
