@@ -90,7 +90,7 @@ RES alocaProcesso(Processo *proc, Lista* pMem, long *alocs, int idProcess){
     return ALOCOU;
 }
 RES desalocaProcesso(Processo *proc, Lista* pMem, long *alocs, int idProcess){
-    if(!proc || !pMem || !alocs)
+    if(!proc || !pMem || !alocs || !pMem->cab)
         return ERRO;
     Celula* aux = pMem->cab->prox;
     Celula* ant = pMem->cab;
@@ -106,7 +106,7 @@ RES desalocaProcesso(Processo *proc, Lista* pMem, long *alocs, int idProcess){
 
         return DESALOC;
     }
-    while(alocs[idProcess] > aux->data.inicio && aux->prox){
+    while(aux != NULL && alocs[idProcess] > aux->data.inicio){
         ant = aux;
         aux = aux->prox;
     }
@@ -122,17 +122,17 @@ bool defragMemory(Lista *pLista){
     if(!pLista || !pLista->cab->prox)
         return false;
     Celula* aux = pLista->cab->prox;
-    
+    Celula* proximo;
     while(aux && aux->prox){
-        Celula* proximo = aux->prox;
+         proximo = aux->prox;
         //Se aux termina onde o proximo começa
         if(aux->data.inicio + aux->data.tam == proximo->data.inicio){
-            //Absorve o próximo bloco de memória
+            //Absorve o próximo bloco de memoria
             aux->data.tam += proximo->data.tam;
-            
+            aux->prox = proximo->prox; //Pulamos o bloco absorvido
             free(proximo);//liberando sua memória
         }
-        aux->prox = proximo->prox; //Pulamos o bloco absorvido
+        else aux = aux->prox;
     }
     
     return true;
@@ -201,9 +201,9 @@ void ordenaEventos(Evento*v, int ini, int fim){
 }
 long* first_fit(Processo *processos, int num_processos) {
    long *alocacoes = (long *)malloc(num_processos * sizeof(long));
-    // verificacao necessaria para passar no valgrind, revisar
-    for(int i = 0; i < num_processos; i++) alocacoes[i] = -1;
+    if(!alocacoes) return NULL;
     Evento *eventos = (Evento*)malloc(sizeof(Evento) * num_processos * 2);
+    if(!eventos) return NULL;
     long max_tam = 0;
     for (int i = 0; i < num_processos; ++i) {
         // Evento de alocacao
@@ -225,12 +225,10 @@ long* first_fit(Processo *processos, int num_processos) {
     for(int i = 0; i < num_processos*2; i++){
         aux = eventos[i].processo; //Qual processo está sendo modificado
         
-        if(eventos[i].tipo == ALLOCATION_EVENT)
-            if(alocaProcesso(processos, memory, alocacoes, aux) == FULL){
-                printf("Memória Cheia!\n");
-            }
-                
-        else{
+        if(eventos[i].tipo == ALLOCATION_EVENT){
+            alocaProcesso(processos, memory, alocacoes, aux);
+        }
+        else if(eventos[i].tipo == DEALLOCATION_EVENT){
             desalocaProcesso(processos, memory, alocacoes, aux);
             defragMemory(memory);
         }
